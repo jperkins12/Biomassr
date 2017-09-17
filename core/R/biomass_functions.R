@@ -5,7 +5,7 @@ treeMass <- function(speciesgroup, dbh) {
   # dbh in CM
   # returns in kg
   
-  bparams = read.csv(file.path('..', '..', 'src', 'csv', 'bparams.csv'))
+  bparams = read.csv(file.path('src', 'csv', 'bparams.csv'))
   
   rowIndex = which(bparams$species.group == tolower(speciesgroup))
   
@@ -30,7 +30,3 @@ plotMass <- function(datatable, speciescol, dbhcol) {
   return(datatable)
   
 }
-
-testData = read.csv("C:\\Users\\Jamie\\Documents\\GitHub\\Biomassr\\test\\AG1 _biomass_est.csv")
-
-testresults = plotMass(testData, 4, 5)
