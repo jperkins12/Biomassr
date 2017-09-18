@@ -7,16 +7,27 @@ treeMass <- function(speciesgroup, dbh) {
   
   bparams = read.csv(file.path('src', 'csv', 'bparams.csv'))
   
-  rowIndex = which(bparams$species.group == tolower(speciesgroup))
-  
-  # fetch contants
-  b0 = bparams$b0[rowIndex]
-  b1 = bparams$b1[rowIndex]
-  
-  # biomass equation
-  biomass = exp(b0 + b1 * log(dbh))
-  
-  return(biomass)
+  # check that species and dbh values are valid
+  if (!is.na(match(tolower(speciesgroup), bparams$species.group))) {
+    if (is.numeric(dbh)) {
+      
+      rowIndex = which(bparams$species.group == tolower(speciesgroup))
+      
+      # fetch contants
+      b0 = bparams$b0[rowIndex]
+      b1 = bparams$b1[rowIndex]
+      
+      # biomass equation
+      biomass = exp(b0 + b1 * log(dbh))
+      
+      return(biomass)
+    } else {
+      return(NA)
+    }
+    
+  } else {
+    return(NA)
+  }
   
 }
 
