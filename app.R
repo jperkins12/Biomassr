@@ -5,29 +5,33 @@ ui <- fluidPage(
   titlePanel("Forest Biomass Estimator"),
   
   sidebarLayout(
-    sidebarPanel(h2("Load Data Table"),
+    sidebarPanel(
                  fluidRow(
                    
                    # input csv file with tree diameter data
-                   fileInput("datafile", h3("File input"),
-                             accept=c('text/csv', 'text/comma-separated-values,text/plain'))
+                   column(12, fileInput("datafile", "File input",
+                             accept=c('text/csv', 'text/comma-separated-values,text/plain')))
                  ),
                  
                  # selector for species column
-                 fluidRow(uiOutput("idcol")),
+                 fluidRow(column(12, uiOutput("idcol"))),
                  
                  # selector for species column
-                 fluidRow(uiOutput("speciescol")),
+                 fluidRow(column(12, uiOutput("speciescol"))),
                  
                  # selector for species column
-                 fluidRow(uiOutput("dbhcol")),
+                 fluidRow(column(12, uiOutput("dbhcol"))),
                  
                  # choose units for dbh
-                 fluidRow(radioButtons("units", h3("DBH Units"),
-                                       choices = list("Cm" = 1, "Inches" = 2),selected = 1)),
+                 fluidRow(column(12, radioButtons("units", "DBH Units",
+                                       choices = list("Cm" = 1, "Inches" = 2),selected = 1))),
                  
-                 #The action button prevents an action firing before we're ready
-                 fluidRow(actionButton("getbiomass", "Calculate Biomass"))
+                 # The action button prevents an action firing before we're ready
+                 fluidRow(
+                   column(6, actionButton("getbiomass", "Calculate Biomass")),
+                 
+                   # download button
+                   column(6, fluidRow(uiOutput("dloader"))))
     ),
     mainPanel(
       tabsetPanel(id = "maintab",
@@ -156,6 +160,21 @@ server <- function(input, output, session) {
     })
     
   })
+  
+  # show download button when results are present
+  output$dloader <- renderUI({
+    
+    req(biocalc())
+    downloadButton("downloadData", "Download")
+    
+  })
+  
+  output$downloadData <- downloadHandler(
+    
+    filename = "forest_biomass.csv",
+    content = function(file) {
+      write.csv(biocalc(), file)
+    })
   
 }
 
