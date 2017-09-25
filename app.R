@@ -13,13 +13,13 @@ ui <- fluidPage(
                              accept=c('text/csv', 'text/comma-separated-values,text/plain')))
                  ),
                  
-                 # selector for species column
+                 # selector for id column
                  fluidRow(column(12, uiOutput("idcol"))),
                  
                  # selector for species column
                  fluidRow(column(12, uiOutput("speciescol"))),
                  
-                 # selector for species column
+                 # selector for dbh column
                  fluidRow(column(12, uiOutput("dbhcol"))),
                  
                  # choose units for dbh
@@ -35,10 +35,33 @@ ui <- fluidPage(
     ),
     mainPanel(
       tabsetPanel(id = "maintab",
+                  
+        tabPanel("Introduction",
+                 h2("Welcome to Biomassr"),
+                 p("Biomassr is a utility that generates above ground biomass estimations[1] for forest observations."),
+                 h4("Instructions:"),
+                 tags$ol(
+                   tags$li("Upload a .csv file that contains at least three fields."),
+                   tags$ol(
+                     tags$li("A unique ID field."),
+                     tags$li("A speices field."),
+                     tags$li("A DBH field.")
+                   ),
+                   tags$li("Use the drop-downs on the left to select the appropriate fields."),
+                   tags$li("Verify the proper units for DBH in the menu to the left."),
+                   tags$li("In the \"Species\" tab, select the appropriate species group"),
+                   tags$li("Click, \"Calculate Biomass\"")
+                 ),
+                 h4("References:"),
+                 p("[1] Jenkins, J. et al., 2003. National scale biomass estimates for United States tree species. Forest Science, 49(1), pp.12–32.")
+                 ),
         # display for data preview
         tabPanel('Raw Data',
                  uiOutput("nodata"),
                  tableOutput("filetable")),
+        
+        tabPanel("Species", value = "speciestab",
+                 uiOutput("specieslist")),
         
         #display biomass results
         tabPanel("Results", value = "resultstab",
@@ -87,7 +110,7 @@ server <- function(input, output, session) {
   #The following set of functions populate the column selectors
   output$idcol <- renderUI({
     df <-filedata()
-    if (is.null(df)) return(NULL)
+    req(df)
     
     items=names(df)
     names(items) = items
@@ -96,7 +119,7 @@ server <- function(input, output, session) {
   
   output$speciescol <- renderUI({
     df <-filedata()
-    if (is.null(df)) return(NULL)
+    req(df)
     
     items=names(df)
     names(items) = items
@@ -105,11 +128,28 @@ server <- function(input, output, session) {
   
   output$dbhcol <- renderUI({
     df <-filedata()
-    if (is.null(df)) return(NULL)
+    req(df)
     
     items=names(df)
     names(items) = items
     selectInput("dbh", "DBH Column",items)
+  })
+  
+  output$specieslist <- renderUI({
+    df <-filedata()
+    req(df)
+    speciescol = input$species
+    
+    # get list of plot species
+    specieslist = as.character(unique(df[,c(speciescol)]))
+    
+    # get list of jenkins species groups
+    grouppath = file.path("src", "csv", "bparams.csv")
+    grouptable = read.csv(grouppath)
+    groups = sort(grouptable$species.group)
+    
+    # create selectinput for each species in plot
+    lapply(specieslist, function(i) {fluidRow(column(12, selectInput(i, label = i, choices = groups)))})
   })
   
   # jump to results tab on 
@@ -144,8 +184,13 @@ server <- function(input, output, session) {
         treedata[,c(dbh)] = treedata[,c(dbh)] * 2.54
       }
       
-      #run the calculation function
+      # get selected columns
       treedata = treedata[,c(id,species,dbh)]
+      
+      # convert species to jenkins specific types
+      treedata[,c(species)] = sapply(as.character(treedata[,c(species)]), function(i) {input[[i]]})
+      
+      # run the calculation function
       source(file.path('core', 'R', 'biomass_functions.R'))
       biomassData = plotMass(treedata, species, dbh)
       
